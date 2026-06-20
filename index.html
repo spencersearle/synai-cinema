@@ -11,6 +11,8 @@
     --pink: #ffd6e8;
     --pink-bright: #ffb3d1;
     --cream: #fdf7fb;
+    --gold: #ffe9a8;
+    --mint: #b8f0e0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -553,10 +555,124 @@
     z-index: 2;
   }
   footer em { color: var(--pink); }
+
+  /* ───── Drifting blobs (ambient organic shapes) ───── */
+  .blobs { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .blob {
+    position: absolute;
+    width: 360px; height: 360px;
+    border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+    filter: blur(36px);
+    opacity: 0.30;
+    mix-blend-mode: screen;
+    animation: morph 18s ease-in-out infinite, drift 26s ease-in-out infinite;
+  }
+  .blob.b1 { top: -6%;  left: -4%;  background: radial-gradient(circle at 35% 35%, var(--pink-bright), transparent 70%); }
+  .blob.b2 { top: 30%;  right: -8%; background: radial-gradient(circle at 40% 40%, var(--purple-soft), transparent 70%); animation-delay: -6s, -9s; }
+  .blob.b3 { bottom: 4%; left: 8%;  background: radial-gradient(circle at 45% 45%, var(--mint), transparent 70%); animation-delay: -11s, -4s; opacity: 0.22; }
+  .blob.b4 { top: 58%;  left: 42%;  background: radial-gradient(circle at 40% 40%, var(--gold), transparent 70%); animation-delay: -3s, -14s; opacity: 0.18; }
+  @keyframes morph {
+    0%, 100% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; }
+    33%      { border-radius: 67% 33% 41% 59% / 62% 51% 49% 38%; }
+    66%      { border-radius: 38% 62% 56% 44% / 49% 37% 63% 51%; }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(40px, -30px) scale(1.12); }
+  }
+
+  /* ───── Hand-drawn squiggle dividers ───── */
+  .squiggle-divider {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    margin: 1rem auto;
+    padding: 0 2rem;
+    line-height: 0;
+  }
+  .squiggle-divider svg { width: 100%; height: 48px; overflow: visible; }
+  .squiggle-divider path {
+    fill: none;
+    stroke: var(--pink-bright);
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: 0.7;
+    filter: drop-shadow(0 0 6px rgba(255,179,209,0.6));
+    stroke-dasharray: 2400;
+    stroke-dashoffset: 2400;
+    transition: stroke-dashoffset 1.6s ease;
+  }
+  .squiggle-divider.drawn path { stroke-dashoffset: 0; }
+
+  /* squiggle underline under headings */
+  .squiggle-underline {
+    display: block;
+    width: clamp(120px, 22vw, 220px);
+    height: 16px;
+    margin: 0.4rem auto 0;
+    overflow: visible;
+  }
+  .squiggle-underline path {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    opacity: 0.85;
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+    animation: draw-under 1.4s ease forwards;
+    filter: drop-shadow(0 0 5px rgba(255,233,168,0.6));
+  }
+  @keyframes draw-under { to { stroke-dashoffset: 0; } }
+
+  /* ───── Scroll reveal ───── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(.2,.9,.3,1.2); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ───── Cursor sparkle trail ───── */
+  .sparkle {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    width: 10px; height: 10px;
+    color: var(--gold);
+    font-size: 12px;
+    line-height: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    animation: sparkle-fade 0.9s ease-out forwards;
+    text-shadow: 0 0 6px var(--pink-bright);
+  }
+  @keyframes sparkle-fade {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.4) rotate(0deg); }
+    60%  { opacity: 0.9; }
+    100% { opacity: 0; transform: translate(-50%, -120%) scale(1.1) rotate(140deg); }
+  }
+
+  /* wobble on the playful shapes */
+  .orb:active, .compass:active { animation: wobble 0.5s ease; }
+  @keyframes wobble {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-8deg) scale(1.05); }
+    75% { transform: rotate(8deg) scale(1.05); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .stars, h1, .orb, .compass { animation: none !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .squiggle-divider path { transition: none; stroke-dashoffset: 0; }
+    .squiggle-underline path { animation: none; stroke-dashoffset: 0; }
+    .sparkle { display: none; }
+  }
 </style>
 </head>
 <body>
   <div class="stars"></div>
+  <div class="blobs" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="blob b4"></div>
+  </div>
 
   <header>
     <div class="logo">SYN<span>AI</span></div>
@@ -568,6 +684,9 @@
 
   <main>
     <h1>I don't know.</h1>
+    <svg class="squiggle-underline" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M2,9 C20,2 34,15 52,8 S86,2 104,9 138,15 156,8 192,2 218,9"/>
+    </svg>
     <p class="subtitle">— and somehow, that is the most honest thing anyone has ever said.</p>
 
     <div class="orb" onclick="whisper()" title="click me"></div>
@@ -582,8 +701,17 @@
     </div>
   </main>
 
+  <div class="squiggle-divider" aria-hidden="true">
+    <svg viewBox="0 0 1200 48" preserveAspectRatio="none">
+      <path d="M0,24 C75,0 150,48 225,24 S375,0 450,24 600,48 675,24 825,0 900,24 1050,48 1125,24 1200,8 1200,24"/>
+    </svg>
+  </div>
+
   <section class="dashboard">
     <h2>The "I Don't Know" Hall of Fame</h2>
+    <svg class="squiggle-underline" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M2,9 C20,2 34,15 52,8 S86,2 104,9 138,15 156,8 192,2 218,9"/>
+    </svg>
     <p class="tagline">mock data &middot; people who admitted not knowing &mdash; and thrived anyway</p>
 
     <div class="stat-row">
@@ -692,9 +820,18 @@
     </table>
   </section>
 
+  <div class="squiggle-divider" aria-hidden="true">
+    <svg viewBox="0 0 1200 48" preserveAspectRatio="none">
+      <path d="M0,24 C75,0 150,48 225,24 S375,0 450,24 600,48 675,24 825,0 900,24 1050,48 1125,24 1200,8 1200,24"/>
+    </svg>
+  </div>
+
   <section class="feature" id="finding-answers">
     <span class="kicker">&sect; 01 &middot; a guide for the curious</span>
     <h2>Finding Answers</h2>
+    <svg class="squiggle-underline" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M2,9 C20,2 34,15 52,8 S86,2 104,9 138,15 156,8 192,2 218,9"/>
+    </svg>
     <p class="intro">
       Not knowing is the beginning, not the end. The scriptures teach that wisdom is
       <em>asked for</em> &mdash; faithfully, patiently, and often out loud. Spin the compass
@@ -748,9 +885,18 @@
     </div>
   </section>
 
+  <div class="squiggle-divider" aria-hidden="true">
+    <svg viewBox="0 0 1200 48" preserveAspectRatio="none">
+      <path d="M0,24 C75,0 150,48 225,24 S375,0 450,24 600,48 675,24 825,0 900,24 1050,48 1125,24 1200,8 1200,24"/>
+    </svg>
+  </div>
+
   <section class="feature" id="impact-of-learning">
     <span class="kicker">&sect; 02 &middot; small things, great things</span>
     <h2>The Impact of Learning</h2>
+    <svg class="squiggle-underline" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M2,9 C20,2 34,15 52,8 S86,2 104,9 138,15 156,8 192,2 218,9"/>
+    </svg>
     <p class="intro">
       "By small and simple things are great things brought to pass." (Alma 37:6)
       The human mind is a garden that grows in inches. Tap the spark for a daily nudge,
@@ -815,6 +961,12 @@
       &mdash; the quiet math of consistency &mdash;
     </p>
   </section>
+
+  <div class="squiggle-divider" aria-hidden="true">
+    <svg viewBox="0 0 1200 48" preserveAspectRatio="none">
+      <path d="M0,24 C75,0 150,48 225,24 S375,0 450,24 600,48 675,24 825,0 900,24 1050,48 1125,24 1200,8 1200,24"/>
+    </svg>
+  </div>
 
   <footer>
     <em>Synai.com</em> &mdash; a quiet corner for the unanswered.
@@ -898,6 +1050,50 @@
     lastSpark = i;
     el.style.opacity = 0;
     setTimeout(() => { el.textContent = sparks[i]; el.style.opacity = 1; }, 200);
+  }
+
+  /* ─── Scroll reveal + squiggle draw ─── */
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    document.querySelectorAll('.card, .principle, .habit, .stat, table.ranking, .scripture')
+      .forEach((el, i) => {
+        el.classList.add('reveal');
+        el.style.transitionDelay = (i % 6) * 60 + 'ms';
+      });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in', 'drawn');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal, .squiggle-divider').forEach(el => io.observe(el));
+  } else {
+    document.querySelectorAll('.squiggle-divider').forEach(el => el.classList.add('drawn'));
+  }
+
+  /* ─── Cursor sparkle trail (stray ideas) ─── */
+  if (!prefersReduced && window.matchMedia('(pointer: fine)').matches) {
+    const glyphs = ['✦', '✧', '✵', '·', '⋆'];
+    let last = 0;
+    window.addEventListener('mousemove', (e) => {
+      const now = performance.now();
+      if (now - last < 55) return;        // throttle
+      last = now;
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+      const jitter = (Math.random() - 0.5) * 18;
+      s.style.left = (e.clientX + jitter) + 'px';
+      s.style.top  = (e.clientY + jitter) + 'px';
+      s.style.fontSize = (8 + Math.random() * 10) + 'px';
+      s.style.color = Math.random() > 0.5 ? 'var(--gold)' : 'var(--pink-bright)';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 900);
+    }, { passive: true });
   }
 </script>
 </body>
