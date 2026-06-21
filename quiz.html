@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synai — the taste quiz</title>
+  <meta name="description" content="Ten this-or-that picks. Synai turns them into a ranked shortlist." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23F4C24B'/></svg>" />
+  <link rel="preconnect" href="https://image.tmdb.org" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+
+  <div class="scene" aria-hidden="true">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+  </div>
+
+  <nav class="nav">
+    <a class="brand" href="index.html"><span class="dot"></span>Synai</a>
+    <a class="btn ghost" href="index.html">← Home</a>
+  </nav>
+
+  <main class="quiz-main">
+    <div class="quiz-stage" id="quiz-stage">
+
+      <div class="progress" aria-hidden="true">
+        <span id="q-count">1 / 10</span>
+        <span class="bar"><i id="prog-fill"></i></span>
+      </div>
+
+      <div class="q-card" id="q-card">
+        <p class="eyebrow">Tap the one you'd watch tonight</p>
+        <h2 id="q-prompt">Which <em>wins</em>?</h2>
+        <div class="matchup" id="matchup">
+          <button class="pick" id="pick-a" type="button"></button>
+          <span class="vs" aria-hidden="true">or</span>
+          <button class="pick" id="pick-b" type="button"></button>
+        </div>
+      </div>
+
+      <div class="q-foot" id="q-foot">
+        <button class="ghost-btn" id="q-back" type="button">← Back</button>
+        <span id="q-hint">No wrong answers</span>
+      </div>
+
+      <section class="results" id="results" aria-live="polite">
+        <div class="results-head">
+          <p class="eyebrow" style="text-align:center">Your shortlist</p>
+          <h2>Made <em>for you</em></h2>
+          <p>Ranked by match — movies and series mixed.</p>
+        </div>
+        <div class="taste-summary" id="taste-summary"></div>
+        <div class="rec-grid" id="rec-grid"></div>
+        <div class="results-cta">
+          <button class="btn" id="retake" type="button">Retake <span class="arr">↻</span></button>
+          <a class="btn ghost" href="index.html">Home</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/quiz.js"></script>
+</body>
+</html>
