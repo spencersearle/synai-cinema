@@ -22,7 +22,7 @@
     lastFocused = document.activeElement;
     els.poster.src = IMG + m.poster;
     els.poster.alt = m.title + ' poster';
-    els.meta.textContent = `${m.year} · ${m.kind} · ${GENRE_LABEL[m.genre]}`;
+    els.meta.innerHTML = `${m.year} · ${m.kind} · <span class="m-rating">${m.rating}</span> · ${GENRE_LABEL[m.genre]}`;
     els.title.textContent = m.title;
     els.moods.innerHTML = (m.moods || []).map((x) => `<span class="m-mood">${MOOD_LABEL[x]}</span>`).join('');
     els.overview.textContent = m.overview;

@@ -114,7 +114,7 @@
     const lo = ranked[ranked.length - 1].s;
     const hi = ranked[0].s || 1;
     const span = (hi - lo) || 1;
-    const top = ranked.slice(0, 8);
+    const top = ranked.slice(0, 12);
 
     const g = topKeys(taste, 2).map((k) => GENRE_LABEL[k]);
     const md = topKeys(mood, 2).map((k) => MOOD_LABEL[k]);
