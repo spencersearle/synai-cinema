@@ -55,6 +55,7 @@ img { display: block; }
 
 /* ---- soft reworked shapes: two quiet radial glows --------- */
 .scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.squiggle { pointer-events: none; z-index: 0; }
 .glow { position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.5; will-change: transform; }
 .glow.g1 { width: 60vw; height: 60vw; left: -18vw; top: -16vw;
   background: radial-gradient(circle, rgba(244,194,75,0.30), transparent 65%); }
@@ -144,6 +145,25 @@ main { position: relative; z-index: 2; }
 .gallery-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 36px; }
 .gallery-head h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
 .gallery-head p { color: var(--muted); margin: 8px 0 0; }
+.catalog-search-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.catalog-search {
+  flex: 1 1 320px; max-width: 520px; font: inherit; color: var(--text);
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px; padding: 14px 22px; outline: none; transition: border-color .2s, background .2s;
+}
+.catalog-search::placeholder { color: var(--muted); }
+.catalog-search:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.06); }
+.search-status { color: var(--muted); font-size: 0.92rem; }
+.catalog-loading { color: var(--muted); padding: 40px 0; grid-column: 1 / -1; text-align: center; }
+.genre-filter { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.genre-chip {
+  font: inherit; font-size: 0.9rem; color: var(--muted); cursor: pointer;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px; padding: 8px 16px; transition: color .18s, background .18s, border-color .18s;
+}
+.genre-chip:hover { color: #fff; border-color: rgba(255, 255, 255, 0.28); }
+.genre-chip.on { color: #20180a; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.see-more-row { display: flex; justify-content: center; margin-top: 36px; }
 .poster-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(10px, 1.4vw, 18px); }
 .tile {
   position: relative; display: block; padding: 0; border: none; cursor: pointer;
@@ -294,9 +314,20 @@ main { position: relative; z-index: 2; }
 .m-rating { display: inline-block; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--line); color: var(--text); letter-spacing: 0.06em; }
 .modal-body h3 { font-size: clamp(1.5rem, 3vw, 2rem); }
 .m-facts { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.02em; color: var(--text); margin: 8px 0 0; }
+.m-scores { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; }
+.m-score { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.82rem; font-weight: 500;
+  padding: 5px 12px; border-radius: 100px; background: var(--bg-3); border: 1px solid var(--line); color: var(--text); }
+.m-score-ico { font-size: 0.95rem; line-height: 1; }
+.m-score-lbl { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.02em; }
+.m-score.fresh { color: #ff6b57; border-color: rgba(255,107,87,0.4); }
+.m-score.rotten { color: #8fae6b; border-color: rgba(143,174,107,0.4); }
 .m-moods { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
-.m-cast { font-size: 0.92rem; line-height: 1.5; color: #cfd3cb; margin: 14px 0 0; }
-.m-cast-label { font-family: var(--mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-right: 7px; }
+.m-cast, .m-watch { display: flex; flex-direction: column; gap: 3px; font-size: 0.92rem; line-height: 1.4; color: #cfd3cb; margin: 14px 0 0; }
+.m-watch { margin-top: 12px; }
+.m-list-label { font-family: var(--mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 3px; }
+.m-list-item { color: #cfd3cb; }
+.m-watch-link { color: var(--accent); text-decoration: none; font-size: 0.84rem; margin-top: 2px; }
+.m-watch-link:hover { text-decoration: underline; }
 .m-mood { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.06em; padding: 5px 11px; border-radius: 100px; background: rgba(244,194,75,0.12); color: var(--accent); border: 1px solid rgba(244,194,75,0.3); }
 .m-overview { color: #d7d3c8; font-size: 1rem; line-height: 1.6; margin: 12px 0 0; }
 .m-match { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); margin: 16px 0 0; }
