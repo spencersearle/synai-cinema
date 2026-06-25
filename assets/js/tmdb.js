@@ -90,9 +90,27 @@
       tags,
       moods: buildMoods(tags),
       overview: raw.overview || 'No description available yet.',
+      popularity: raw.popularity || 0,
       _enriched: false,
     };
   }
+
+  /* Convert chosen TMDB genre ids → Synai genre-dimension weights,
+     so a genre pick boosts the matching titles in the ranking. */
+  function genreToDims(ids) {
+    const dims = {};
+    (ids || []).forEach((id) => {
+      const w = MOVIE_GENRE[id] || TV_GENRE[id];
+      if (w) for (const k in w) dims[k] = (dims[k] || 0) + w[k];
+    });
+    return dims;
+  }
+  // movie genre id → closest TV genre id (null = no TV equivalent)
+  const MOVIE_TO_TV = {
+    28: 10759, 12: 10759, 16: 16, 35: 35, 80: 80, 99: 99, 18: 18, 10751: 10751,
+    14: 10765, 36: 18, 27: null, 10402: null, 9648: 9648, 10749: null,
+    878: 10765, 53: null, 10752: 10768, 37: 37,
+  };
 
   /* ---- bulk load + grow-on-demand -------------------------
      The home catalog is kept APPROPRIATE: mainly PG (and G)
@@ -177,14 +195,23 @@
      are GUARANTEED within the cap, so "family-friendly" can
      never surface PG-13+. */
   const CERT_FOR_CAP = { 1: 'PG', 2: 'PG-13', 3: 'R' };
-  async function loadRatedPool(cap) {
+  async function loadRatedPool(cap, genreIds) {
     const certLte = CERT_FOR_CAP[cap] || 'R';
     const movieExtra = { ...US, 'certification.lte': certLte };
     // TV can't filter by certification; for family, restrict to Family/Kids genres
     const tvExtra = cap === 1 ? { with_genres: '10751,10762' } : { without_genres: '10763,10767,10764' };
+    // narrow to the chosen genres (OR), so the picks really pinpoint
+    const picks = (genreIds || []).filter((id) => id != null);
+    let fetchTv = true;
+    if (picks.length) {
+      movieExtra.with_genres = picks.join('|');
+      const tvIds = [...new Set(picks.map((id) => MOVIE_TO_TV[id]).filter((x) => x != null))];
+      if (tvIds.length) tvExtra.with_genres = tvIds.join('|');
+      else fetchTv = false;                       // chosen genres have no TV form → movies only
+    }
     const [movies, tv] = await Promise.all([
-      discover('/discover/movie', 'Movie', 1, 6, movieExtra),
-      discover('/discover/tv', 'Series', 1, 4, tvExtra),
+      discover('/discover/movie', 'Movie', 1, 7, movieExtra),
+      fetchTv ? discover('/discover/tv', 'Series', 1, 4, tvExtra) : Promise.resolve([]),
     ]);
     movies.forEach((m) => { m._capSafe = cap; });  // guaranteed ≤ cap by the cert filter
     tv.forEach((m) => { m._capSafe = cap; });
@@ -250,25 +277,41 @@
     return m;
   }
 
-  /* ---- live search (truly "every title") ------------------ */
+  /* ---- live search: by title OR by actor/actress ---------- */
+  const asKind = (mt) => (mt === 'tv' ? 'Series' : mt === 'movie' ? 'Movie' : null);
   async function search(query) {
     if (!query.trim()) return [];
     try {
       const d = await fetch(url('/search/multi', { query, include_adult: 'false' })).then((r) => r.json());
       const out = [];
+      const people = [];
       (d.results || []).forEach((raw) => {
-        const kind = raw.media_type === 'tv' ? 'Series' : raw.media_type === 'movie' ? 'Movie' : null;
+        if (raw.media_type === 'person') { people.push(raw); return; }
+        const kind = asKind(raw.media_type);
         if (!kind) return;
         const it = toItem(raw, kind);
         if (it) out.push(it);
       });
-      // fold any new finds into CATALOG so byId()/modal can resolve them
-      absorb(out);
-      return out;
+      // for matched people (actors/actresses), pull their filmography
+      for (const p of people.slice(0, 2)) {
+        const c = await fetch(url(`/person/${p.id}/combined_credits`)).then((r) => r.json()).catch(() => null);
+        (c && c.cast || []).forEach((raw) => {
+          const kind = asKind(raw.media_type);
+          if (!kind) return;
+          const it = toItem(raw, kind);
+          if (it) out.push(it);
+        });
+      }
+      // dedupe, then most popular first
+      const uniq = new Map();
+      out.forEach((it) => { if (!uniq.has(it.id)) uniq.set(it.id, it); });
+      const results = [...uniq.values()].sort((a, b) => b.popularity - a.popularity);
+      absorb(results);       // fold finds into CATALOG so byId()/modal can resolve them
+      return results;
     } catch (e) { return []; }
   }
 
-  window.SynaiTMDB = { loadCatalog, loadMore, loadRatedPool, enrich, search, isHomeSafe };
+  window.SynaiTMDB = { loadCatalog, loadMore, loadRatedPool, enrich, search, isHomeSafe, genreToDims };
 
   /* ---- big white squiggles across the background ----------
      Each is a full-width wavy line. They're laid into evenly

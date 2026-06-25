@@ -19,6 +19,8 @@ window.SynaiQuiz = function () {
   let kindBias = 0;   // + favors Movie, - favors Series
   let recencyBias = 0;// + favors newer, - favors older
   let maturCap = 9;   // age-rating ceiling (1=family … 3=mature, 9=anything)
+  let kindOnly = null;// 'Movie' or 'Series' to hard-restrict the result type
+  let pickedGenres = []; // TMDB genre ids the user tapped (multi-select)
   let index = 0;
   const history = []; // deltas, for Back
 
@@ -45,14 +47,17 @@ window.SynaiQuiz = function () {
      The core questions (mature?, craving?, era?) are always asked
      and lead the quiz; a random handful of the mood questions
      follow to fine-tune. No more movie-vs-movie matchups. */
-  const MOOD_PER_QUIZ = 6;
+  // total questions = 3 core + 1 genre + MOOD_PER_QUIZ  (kept ≤ 15)
+  const MOOD_PER_QUIZ = 8;
 
   const prep = (q) => ({ type: 'mood', kicker: q.kicker, q: q.q, options: shuffle(q.options.slice()) });
 
   function buildQuiz() {
     const core = CORE_QUESTIONS.map(prep);                       // always, in order
+    const genreQ = { type: 'genre', kicker: 'Your genres', q: 'Which genres are you feeling tonight? Pick any.' };
     const extra = shuffle(MOOD_POOL).slice(0, MOOD_PER_QUIZ).map(prep);
-    return core.concat(extra);
+    // rating first, genres second, then the rest of core, then the sampled questions
+    return [core[0], genreQ].concat(core.slice(1), extra);
   }
 
   let QUESTIONS = buildQuiz();
@@ -67,6 +72,16 @@ window.SynaiQuiz = function () {
       if (sign > 0) { d._prevMatur = maturCap; maturCap = d.maturity; }
       else { maturCap = (d._prevMatur != null) ? d._prevMatur : 9; }
     }
+    // genre picks are a set; stash the previous list for Back
+    if (d.genres) {
+      if (sign > 0) { d._prevGenres = pickedGenres.slice(); pickedGenres = d.genres.slice(); }
+      else { pickedGenres = d._prevGenres ? d._prevGenres.slice() : []; }
+    }
+    // movie/show is a hard choice (set, not added); stash previous for Back
+    if ('only' in d) {
+      if (sign > 0) { d._prevOnly = kindOnly; kindOnly = d.only || null; }
+      else { kindOnly = (d._prevOnly !== undefined) ? d._prevOnly : null; }
+    }
   }
 
   /* ---- render ---------------------------------------------- */
@@ -78,13 +93,28 @@ window.SynaiQuiz = function () {
     els.back.disabled = index === 0;
 
     els.prompt.textContent = q.q;
-    els.body.className = 'opts';
-    els.body.innerHTML = q.options.map((o, i) =>
-      `<button class="opt" type="button" data-opt="${i}">` +
-        `<span class="opt-label">${o.label}</span>` +
-        (o.sub ? `<span class="opt-sub">${o.sub}</span>` : '') +
-      `</button>`
-    ).join('');
+
+    if (q.type === 'genre') {
+      els.body.className = 'genre-pick';
+      els.body.innerHTML =
+        '<div class="gp-grid">' +
+          GENRE_PICKER.map((g) => `<button class="gp-chip" type="button" data-g="${g.id}">${g.label}</button>`).join('') +
+        '</div>' +
+        '<button class="btn gp-next" type="button" data-gnext>Continue <span class="arr">→</span></button>';
+      // restore any earlier picks (for Back)
+      pickedGenres.forEach((id) => {
+        const b = els.body.querySelector(`[data-g="${id}"]`);
+        if (b) b.classList.add('on');
+      });
+    } else {
+      els.body.className = 'opts';
+      els.body.innerHTML = q.options.map((o, i) =>
+        `<button class="opt" type="button" data-opt="${i}">` +
+          `<span class="opt-label">${o.label}</span>` +
+          (o.sub ? `<span class="opt-sub">${o.sub}</span>` : '') +
+        `</button>`
+      ).join('');
+    }
 
     if (!reduce) { els.card.style.animation = 'none'; void els.card.offsetWidth; els.card.style.animation = 'rise .45s cubic-bezier(.2,.7,.2,1)'; }
   }
@@ -102,13 +132,27 @@ window.SynaiQuiz = function () {
 
   els.body.addEventListener('click', (e) => {
     const q = QUESTIONS[index];
+    if (q.type === 'genre') {
+      const chip = e.target.closest('[data-g]');
+      if (chip) { chip.classList.toggle('on'); return; }
+      if (e.target.closest('[data-gnext]')) {
+        const ids = Array.from(els.body.querySelectorAll('.gp-chip.on')).map((b) => +b.dataset.g);
+        const dims = (window.SynaiTMDB && window.SynaiTMDB.genreToDims) ? window.SynaiTMDB.genreToDims(ids) : {};
+        // scale the genre boost a touch so it leans the ranking meaningfully
+        for (const k in dims) dims[k] *= 2;
+        advance({ taste: dims, mood: {}, genres: ids }, null);
+      }
+      return;
+    }
     const opt = e.target.closest('[data-opt]');
     if (opt) {
       const o = q.options[+opt.dataset.opt];
-      advance({
+      const delta = {
         taste: o.dims || {}, mood: moodsToObj(o.moods),
         kind: o.kind || 0, recency: o.recency || 0, maturity: o.maturity,
-      }, opt);
+      };
+      if ('only' in o) delta.only = o.only || null; // movie/show question only
+      advance(delta, opt);
     }
   });
 
@@ -154,9 +198,13 @@ window.SynaiQuiz = function () {
   async function buildPool() {
     let pool = [];
     if (window.SynaiTMDB && window.SynaiTMDB.loadRatedPool) {
-      pool = await window.SynaiTMDB.loadRatedPool(maturCap);
+      pool = await window.SynaiTMDB.loadRatedPool(maturCap, pickedGenres);
     }
-    const fit = (typeof CURATED !== 'undefined' ? CURATED : []).filter((m) => ratingFitsCap(m.rating, maturCap));
+    // which Synai genre-keys did the picks map to? (used to keep curated relevant)
+    const wantKeys = (window.SynaiTMDB && window.SynaiTMDB.genreToDims)
+      ? Object.keys(window.SynaiTMDB.genreToDims(pickedGenres)) : [];
+    const fit = (typeof CURATED !== 'undefined' ? CURATED : []).filter((m) =>
+      ratingFitsCap(m.rating, maturCap) && (!wantKeys.length || wantKeys.includes(m.genre)));
     fit.forEach((m) => { m._capSafe = maturCap; });
     const seenIds = new Set(pool.map((m) => m.id));
     fit.forEach((m) => { if (!seenIds.has(m.id)) { seenIds.add(m.id); pool.push(m); } });
@@ -171,7 +219,12 @@ window.SynaiQuiz = function () {
     els.prog.style.width = '100%';
     els.prompt.textContent = 'Finding your picks…';
     els.body.innerHTML = '';
-    const pool = await buildPool();
+    let pool = await buildPool();
+    // honor an explicit movie/show choice (fall back to all if it'd be empty)
+    if (kindOnly) {
+      const only = pool.filter((m) => m.kind === kindOnly);
+      if (only.length) pool = only;
+    }
     const ranked = pool.map((m) => ({ m, s: scoreItem(m) })).sort((a, b) => b.s - a.s);
     const lo = ranked.length ? ranked[ranked.length - 1].s : 0;
     const hi = (ranked[0] && ranked[0].s) || 1;
@@ -181,9 +234,15 @@ window.SynaiQuiz = function () {
     const g = topKeys(taste, 2).map((k) => GENRE_LABEL[k]);
     const md = topKeys(mood, 2).map((k) => MOOD_LABEL[k]);
     const pills = [];
+    if (pickedGenres.length) {
+      const names = GENRE_PICKER.filter((x) => pickedGenres.includes(x.id)).map((x) => x.label).slice(0, 4);
+      if (names.length) pills.push(`<span class="taste-pill">You picked <b>${names.join(', ')}</b></span>`);
+    }
     md.forEach((x) => pills.push(`<span class="taste-pill">In the mood for <b>${x}</b></span>`));
     g.forEach((x) => pills.push(`<span class="taste-pill">You lean <b>${x}</b></span>`));
-    if (kindBias > 1) pills.push(`<span class="taste-pill">Leaning toward <b>Movies</b></span>`);
+    if (kindOnly === 'Movie') pills.push(`<span class="taste-pill">Just <b>Movies</b></span>`);
+    else if (kindOnly === 'Series') pills.push(`<span class="taste-pill">Just <b>Shows</b></span>`);
+    else if (kindBias > 1) pills.push(`<span class="taste-pill">Leaning toward <b>Movies</b></span>`);
     else if (kindBias < -1) pills.push(`<span class="taste-pill">Leaning toward <b>Series</b></span>`);
     if (recencyBias > 1) pills.push(`<span class="taste-pill">Prefer <b>recent</b> picks</span>`);
     else if (recencyBias < -1) pills.push(`<span class="taste-pill">Prefer <b>timeless</b> picks</span>`);
@@ -220,7 +279,7 @@ window.SynaiQuiz = function () {
   els.retake.addEventListener('click', () => {
     for (const k in taste) delete taste[k];
     for (const k in mood) delete mood[k];
-    kindBias = 0; recencyBias = 0; maturCap = 9; history.length = 0; index = 0;
+    kindBias = 0; recencyBias = 0; maturCap = 9; kindOnly = null; pickedGenres = []; history.length = 0; index = 0;
     QUESTIONS = buildQuiz(); // fresh, different questions each time
     els.results.classList.remove('show');
     els.card.style.display = '';
