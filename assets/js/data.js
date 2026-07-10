@@ -141,7 +141,7 @@ const FILTER_QUESTIONS = [
     { label: 'Spanish-language', sub: 'Spain & Latin America', set: { lang: 'es' } },
     { label: 'Anywhere', sub: 'No preference', set: { lang: null } },
   ] },
-  { kicker: 'Length', q: 'How long do you want it?', options: [
+  { kicker: 'Length', movieOnly: true, q: 'How long do you want it?', options: [
     { label: 'Short & snappy', sub: 'Under 1h40', set: { runtimeGte: null, runtimeLte: 100 } },
     { label: 'Standard', sub: 'Around 2 hours', set: { runtimeGte: 95, runtimeLte: 140 } },
     { label: 'Long & epic', sub: '2h20 and up', set: { runtimeGte: 140, runtimeLte: null } },
@@ -153,6 +153,14 @@ const FILTER_QUESTIONS = [
     { label: 'A hidden gem', sub: 'Underseen', set: { acclaim: 'hidden' } },
     { label: 'Anything great', sub: 'No preference', set: { acclaim: null } },
   ] },
+];
+
+/* Streaming services (TMDB watch-provider ids, US region) — multi-select.
+   Picking none = search everywhere. */
+const PROVIDER_PICKER = [
+  { label: 'Netflix', id: 8 }, { label: 'Prime Video', id: 9 }, { label: 'Disney+', id: 337 },
+  { label: 'Hulu', id: 15 }, { label: 'HBO Max', id: 1899 }, { label: 'Apple TV+', id: 350 },
+  { label: 'Paramount+', id: 531 }, { label: 'Peacock', id: 386 },
 ];
 
 /* The full genre list (TMDB ids) — multi-select. */

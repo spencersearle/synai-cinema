@@ -235,6 +235,7 @@
 
     const genres = (o.genreIds || []).filter((x) => x != null);
     const keywords = (!relaxKeywords && o.keywordIds || []).filter((x) => x != null);
+    const providers = (o.providerIds || []).filter((x) => x != null);
 
     // US cert filter only works for titles that HAVE a US rating (i.e. English
     // releases). For foreign-language picks, drop it so results aren't empty.
@@ -248,6 +249,7 @@
     if (o.lang) movieP.with_original_language = o.lang;
     if (o.runtimeGte) movieP['with_runtime.gte'] = o.runtimeGte;
     if (o.runtimeLte) movieP['with_runtime.lte'] = o.runtimeLte;
+    if (providers.length) { movieP.watch_region = 'US'; movieP.with_watch_providers = providers.join('|'); }
 
     const tvP = { include_adult: 'false', sort_by: sort, ...acc };
     if (cap === 1) tvP.with_genres = '10751|10762';      // family/kids only when family-friendly
@@ -259,6 +261,7 @@
     if (o.dateGte) tvP['first_air_date.gte'] = o.dateGte;
     if (o.dateLte) tvP['first_air_date.lte'] = o.dateLte;
     if (o.lang) tvP.with_original_language = o.lang;
+    if (providers.length) { tvP.watch_region = 'US'; tvP.with_watch_providers = providers.join('|'); }
 
     const wantMovies = o.kindOnly !== 'Series';
     const wantTv = o.kindOnly !== 'Movie';
